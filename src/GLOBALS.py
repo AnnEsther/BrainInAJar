@@ -15,7 +15,7 @@ LLM_DOCKER_CONFIG = {
                 DeviceRequest(count=-1, capabilities=[['gpu']])  # Allocate all GPUs
             ]
         }
-LLM_URL = "http://localhost:11434/api/generate"
+LLM_URL = "http://localhost:11434/api/chat"
 LLM_HEADERS = {
     "Content-Type": "application/json"
 }
@@ -41,7 +41,6 @@ STREAM_CHUNK = 1024
 
 INPUT_FILE = "input_audio.wav"
 OUTPUT_FILE = "output_audio.wav"
-# LLM_URL = "http://localhost:11434/api/chat" #api/generate
 TTS_URL = "http://localhost:5002/api/tts"
 TTS_PARAMS = {
     "text": "",

@@ -42,18 +42,26 @@ class LLM_Thread(threading.Thread):
             self.thread.join()
 
     def send_request_to_ollama(self,prompt):
-        url = "http://localhost:11434/api/generate"
-        headers = {
-            "Content-Type": "application/json"
-        }
-        data = {
-            "model": GLOBALS.LLM_MODEL,
-            "prompt": prompt
-        }
+        # url = "http://localhost:11434/api/generate"
+        # headers = {
+        #     "Content-Type": "application/json"
+        # }
+        # data = {
+        #     "model": GLOBALS.LLM_MODEL,
+        #     "prompt": prompt
+        # }
+        # response = requests.post(url, headers=headers, data=json.dumps(data), stream=True)
 
-        print(url == GLOBALS.LLM_URL)
-
-        response = requests.post(url, headers=headers, data=json.dumps(data), stream=True)
+        payload = {
+            "model": "mistral",
+            "messages": [
+                {
+                    "role": "user",
+                    "content":prompt
+                }
+            ]
+        }
+        response = requests.post(GLOBALS.LLM_URL, data=json.dumps(payload), headers=GLOBALS.LLM_HEADERS)
 
         # print(response.status_code)
         # print(response.json())
@@ -67,19 +75,24 @@ class LLM_Thread(threading.Thread):
         for line in response.iter_lines():
             if line:
                 line_data = json.loads(line.decode('utf-8'))
-                response_text = line_data.get("response", "")
+                # response_text = line_data.get("response", "")
+                response_text = line_data.get("message", "")
+                response_text = response_text.get("content", "")
                 self.user_interface.stream_text(response_text)
-                print(response_text, end="", flush=True)
+                # print(response_text, end="", flush=True)
                 actual_response += response_text
+                # Send as sentences
                 if len(actual_response) > 50 and '.' in actual_response:
                     parts = actual_response.split('.', 1)
                     parts[0] = parts[0] + "."
                     self.tts_worker.add_task({"sentence": parts[0]})
                     actual_response = parts[1]
                 if line_data.get("done", False):
+                    self.tts_worker.add_task({"sentence":actual_response})
                     break
         # print("\n---------------\n")
         self.user_interface.stream_text("\n\n")
+        # self.tts_worker.add_task({"sentence":actual_response})
         return actual_response
 
 

@@ -2,6 +2,7 @@ import queue
 import threading
 import pyaudio
 import GLOBALS
+import utils
 
 
 class Stream_Thread(threading.Thread):
@@ -12,6 +13,7 @@ class Stream_Thread(threading.Thread):
         self.thread = threading.Thread(target=self.run)
         # self.thread.daemon = True  # Daemonize thread to exit when main program exits
         self.stop_event = threading.Event()
+        # self.counter = 1
 
     def run(self):
         # Initialize PyAudio
@@ -32,6 +34,9 @@ class Stream_Thread(threading.Thread):
             return
         # Play audio data
         self.stream.write(audio_bytes)
+        # # Write to a file
+        # utils.save_audio_file(audio_bytes, str(self.counter)+"_output.mp3")
+        # self.counter+=1
         
 
     def start(self):

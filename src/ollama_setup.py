@@ -3,6 +3,7 @@ import docker
 from docker.types import DeviceRequest
 
 import GLOBALS
+import utils
 
 def start_ollama_container():
     client = docker.from_env()
@@ -24,7 +25,7 @@ def start_ollama_container():
         container = client.containers.run(**GLOBALS.LLM_DOCKER_CONFIG, detach=True)
 
     # Execute the command inside the running container
-    exec_command = 'ollama run ' + GLOBALS.LLM_MODEL_NAME
+    exec_command = 'ollama run ' + GLOBALS.LLM_MODEL
     # exec_command = 'ollama run gemma'
     
     exit_code, output = container.exec_run(exec_command, detach=True)
@@ -36,5 +37,8 @@ def start_ollama_container():
     return container
 
 
+def start_ollama_container_mac():
+    utils.run_command_mac("ollama pull mistral")
+    utils.run_command_mac("ollama run mistral")
 
 # start_ollama_container()

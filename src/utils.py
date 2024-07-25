@@ -1,6 +1,6 @@
 import pyaudio
-from pydub import AudioSegment
-import simpleaudio as sa
+# from pydub import AudioSegment
+# import simpleaudio as sa
 import subprocess
 import time
 
@@ -10,20 +10,20 @@ def save_audio_file(audioString : str, fileName : str):
     with open(fileName, "wb") as f:
         f.write(audioString)
 
-def play_audio_file(fileName : str):
-    # Load the audio file using pydub
-    audio = AudioSegment.from_file(fileName)
+# def play_audio_file(fileName : str):
+#     # Load the audio file using pydub
+#     audio = AudioSegment.from_file(fileName)
     
-    # Play the audio using simpleaudio
-    play_obj = sa.play_buffer(
-        audio.raw_data,
-        num_channels=audio.channels,
-        bytes_per_sample=audio.sample_width,
-        sample_rate=audio.frame_rate
-    )
+#     # Play the audio using simpleaudio
+#     play_obj = sa.play_buffer(
+#         audio.raw_data,
+#         num_channels=audio.channels,
+#         bytes_per_sample=audio.sample_width,
+#         sample_rate=audio.frame_rate
+#     )
     
-    # Wait for playback to finish before exiting
-    play_obj.wait_done()
+#     # Wait for playback to finish before exiting
+#     play_obj.wait_done()
 
 def run_command(command):
     """
@@ -85,3 +85,14 @@ def play_audio_from_bytes(audio_bytes):
 
     # Terminate PyAudio
     p.terminate()
+
+def run_command_mac(command):
+    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    
+    if process.returncode == 0:
+        print(f"Command '{command}' executed successfully.")
+        print("Output:\n" + stdout.decode())
+    else:
+        print(f"Command '{command}' failed with return code {process.returncode}.")
+        print("Error:\n" + stderr.decode())
