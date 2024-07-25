@@ -1,94 +1,95 @@
+import tkinter as tk
 
-import pyaudio
-import wave
-import keyboard
-import time
-import os
-
-import llm_model
-import llm_utils
-import tts_model
-import stt_model
-import utils
 import GLOBALS
+import prompt_screen
+import input_screen
+import output_screen
+
+import ollama_setup
+import tts_setup
+import audio_thread
+import llm_thread
+import prompt_thread
+import tts_thread
+import stream_thread
 
 
+class AppUI(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title(GLOBALS.APP_NAME)
+        self.geometry(GLOBALS.APP_SIZE)
 
+        self.create_components()
 
-def wait_for_prompt():
-    audio = pyaudio.PyAudio()
-    stream = audio.open(format=GLOBALS.FORMAT, channels=GLOBALS.CHANNELS, rate=GLOBALS.RATE, input=True  , frames_per_buffer=GLOBALS.CHUNK)
-    frames = []
-    print("Press SPACE to start talking")
-    keyboard.wait('space')
-    print("Listening... Press SPACE to stop.")
-    time.sleep(0.2)
-    while True:
-        try:
-            data = stream.read(GLOBALS.CHUNK)  
-            frames.append(data)
-        except KeyboardInterrupt:
-            break
-        if keyboard.is_pressed('space'):
-            print("Stoped listening")
-            print("Processing...") 
-            time.sleep(0.2)
-            break   
-    stream.stop_stream()
-    stream.close()
-    audio.terminate()
+        self.start_docker_containers()
+        self.create_threads()
+        self.start_threads()
 
-    wave_file = wave.open(GLOBALS.INPUT_FILE, 'wb')  
-    wave_file.setnchannels(GLOBALS.CHANNELS)  
-    wave_file.setsampwidth(audio.get_sample_size(GLOBALS.FORMAT))
-    wave_file.setframerate(GLOBALS.RATE)
-    wave_file.writeframes(b''.join(frames))
-    wave_file.close()
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
 
+    def update_time(self, time_remain):
+        self.timer_label.config(text=f"Time Remaining: {time_remain} s")
+        
+    def highlight_prompt(self, text_to_highlight):
+        self.promptScreen.highlight_text(text_to_highlight)
 
-def initialize():
-    print("Initializing...")
-    os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
-    llm_utils.is_ollama_active()
-    llm_utils.is_mistral_active()
-
-def main():
-    initialize()
-    alive = True
-    while alive   :
-        wait_for_prompt()
-
-        print("Converting speech to text...") 
-        text = stt_model.transcribe_audio(GLOBALS.INPUT_FILE)
-
-        # if(text.lower() == "exit." or text.lower() == "exit"):
-        #     return
-          
-        print("Brain is thinking...") 
-        llm_response = llm_model.get_response_from_prompt(text)
-        print(f"Response from LLM: {llm_response}")
-
-        #send to coquoi tts
-        print("Converting thought to speech...") 
-        output_audio = tts_model.text_to_speech(llm_response)
-
-        utils.save_audio_file(output_audio, GLOBALS.OUTPUT_FILE)
-
-        print("Brain is speaking...") 
-        utils.play_audio_file(GLOBALS.OUTPUT_FILE)
+    def stream_text(self,text):
+        self.outputScreen.stream_text_to_box(text)
     
-main()
+    def on_close(self):
+        # Custom action on window close
+        self.prompt_worker.stop()
+        self.llm_worker.stop()
+        self.tts_worker.stop()
+        self.audio_worker.stop()
+        self.stream_worker.stop()
+        self.destroy()
+
+    def create_components(self):
+        # Parent Frame
+        self.parent_frame = tk.Frame(self)
+        self.parent_frame.pack(fill='both', expand=True, pady=10)
+
+        self.promptScreen = prompt_screen.PromptScreen( self.parent_frame)
+
+        self.inputScreen = input_screen.InputScreen(self.parent_frame, self.promptScreen)
+
+        self.timer_frame = tk.Frame(self.parent_frame)
+        self.timer_frame.pack(padx=10, fill='x', expand=True)
+        # Inner frame to center the timer_label and skip_button
+        self.inner_frame = tk.Frame(self.timer_frame)
+        self.inner_frame.pack()
+        self.timer_label = tk.Label(self.inner_frame, text="Timer: ")
+        self.timer_label.pack(side=tk.LEFT, padx=10)
+        self.skip_button = tk.Button(self.inner_frame, text="Skip", command=self.skip_timer)
+        self.skip_button.pack(side=tk.LEFT,padx=10)
+
+        self.outputScreen = output_screen.OutputScreen(self.parent_frame)
+
+    def start_docker_containers(self):
+        ollama_setup.start_ollama_container()
+        tts_setup.start_tts_container()
+
+    def create_threads(self):
+        self.stream_worker = stream_thread.Stream_Thread("stream_thread")
+        self.audio_worker = audio_thread.Audio_Thread("audio_thread", streamer = self.stream_worker)
+        self.tts_worker = tts_thread.TTS_Thread("tts_thread", stream_worker=self.stream_worker)
+        self.llm_worker = llm_thread.LLM_Thread("llm_thread", tts_worker=self.tts_worker,  ui = self)
+        self.prompt_worker = prompt_thread.Promt_Thread("prompt_thread", llm_worker=self.llm_worker,interval=60, ui = self)
+
+    def start_threads(self):
+        self.audio_worker.start()
+        self.tts_worker.start()
+        self.llm_worker.start()
+        self.prompt_worker.start()
+        self.stream_worker.start()
+
+    def skip_timer(self):
+        self.prompt_worker.skip_timer()
 
 
+if __name__ == "__main__":
+    app = AppUI()
+    app.mainloop()
 
-
-
-
-
-
-# start Mistral AI
-#     ollama run mistral
-# start tts docker image
-#     docker run --rm -it -p 5002:5002 --gpus all --entrypoint /bin/bash ghcr.io/coqui-ai/tts
-#     python3 TTS/server/server.py --list_models #To get the list of available models
-#     python3 TTS/server/server.py --model_name tts_models/en/vctk/vits --use_cuda true

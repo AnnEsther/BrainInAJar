@@ -1,11 +1,2 @@
-faster-whisper
-flask
-httpx
-ollama
-torch
-requests
-pydub 
-simpleaudio
+docker
 pyaudio
-wave
-keyboard

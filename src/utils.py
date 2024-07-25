@@ -1,6 +1,9 @@
+import pyaudio
 from pydub import AudioSegment
 import simpleaudio as sa
 import subprocess
+import time
+
 
 def save_audio_file(audioString : str, fileName : str):
     # Save the response content as an audio file
@@ -40,3 +43,45 @@ def run_command(command):
         print(f"Command output: {e.output}")
         return None
 
+def measure_time(func, *args, **kwargs):
+    """
+    Measure the time taken by a function to execute.
+
+    Args:
+        func (callable): The function to measure.
+        *args: Arguments to pass to the function.
+        **kwargs: Keyword arguments to pass to the function.
+
+    Returns:
+        tuple: The result of the function and the time taken to execute.
+    """
+    start_time = time.time()
+    result = func(*args, **kwargs)
+    end_time = time.time()
+    time_taken = end_time - start_time
+    return result, time_taken
+
+def play_audio_from_bytes(audio_bytes):
+    chunk = 1024  # Chunk size for audio stream
+    format = pyaudio.paInt16  # Audio format (16-bit PCM)
+    channels = 1  # Number of audio channels (1 for mono, 2 for stereo)
+    rate = 23050  # Sample rate (samples per second)
+
+    # Initialize PyAudio
+    p = pyaudio.PyAudio()
+
+    # Open stream
+    stream = p.open(format=format,
+                    channels=channels,
+                    rate=rate,
+                    output=True)
+
+    # Play audio data
+    stream.write(audio_bytes)
+
+    # Stop stream
+    stream.stop_stream()
+    stream.close()
+
+    # Terminate PyAudio
+    p.terminate()
