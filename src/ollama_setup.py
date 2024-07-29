@@ -18,8 +18,8 @@ def start_ollama_container():
         if container.status != 'running':
             # Start the container if it's not already running
             container.start()
-        else:
-            return container
+        # else:
+        #     return container
     else:
         # Run the container
         container = client.containers.run(**GLOBALS.LLM_DOCKER_CONFIG, detach=True)
@@ -37,8 +37,8 @@ def start_ollama_container():
     return container
 
 
-def start_ollama_container_mac():
-    utils.run_command_mac("ollama pull mistral")
-    utils.run_command_mac("ollama run mistral")
+def start_ollama():
+    utils.run_command_mac("ollama pull " + GLOBALS.LLM_MODEL)
+    utils.run_command_mac("ollama run " + GLOBALS.LLM_MODEL)
 
 # start_ollama_container()

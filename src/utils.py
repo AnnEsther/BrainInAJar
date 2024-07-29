@@ -1,8 +1,13 @@
+import platform
 import pyaudio
 # from pydub import AudioSegment
 # import simpleaudio as sa
 import subprocess
 import time
+
+import GLOBALS
+import ollama_setup
+import tts_setup
 
 
 def save_audio_file(audioString : str, fileName : str):
@@ -96,3 +101,28 @@ def run_command_mac(command):
     else:
         print(f"Command '{command}' failed with return code {process.returncode}.")
         print("Error:\n" + stderr.decode())
+
+def is_installed(program):
+    try:
+        result = subprocess.run([program, '--version'], capture_output=True, text=True)
+        if result.returncode == 0:
+            return True
+        else:
+            return False
+    except FileNotFoundError:
+        return False
+    
+def initiate_enviornment():
+    os_name = platform.system()
+    GLOBALS.SYS_OS = os_name
+    if os_name == "Windows":
+        if is_installed('docker'):
+            ollama_setup.start_ollama_container()
+            tts_setup.start_tts_container()
+        else:
+            print("Install Docker first.")
+    else:
+        if is_installed('ollama'):
+            ollama_setup.start_ollama()
+        else:
+            print("Install Ollama first.")

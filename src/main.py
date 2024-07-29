@@ -5,13 +5,11 @@ import prompt_screen
 import input_screen
 import output_screen
 
-import ollama_setup
-import tts_setup
-import audio_thread
 import llm_thread
 import prompt_thread
 import tts_thread
 import stream_thread
+import utils
 
 
 class AppUI(tk.Tk):
@@ -22,7 +20,8 @@ class AppUI(tk.Tk):
 
         self.create_components()
 
-        self.start_docker_containers()
+        utils.initiate_enviornment()
+        
         self.create_threads()
         self.start_threads()
 
@@ -42,8 +41,8 @@ class AppUI(tk.Tk):
         self.prompt_worker.stop()
         self.llm_worker.stop()
         self.tts_worker.stop()
-        self.audio_worker.stop()
-        self.stream_worker.stop()
+        if GLOBALS.SYS_OS == "Windows":
+            self.stream_worker.stop()
         self.destroy()
 
     def create_components(self):
@@ -67,23 +66,21 @@ class AppUI(tk.Tk):
 
         self.outputScreen = output_screen.OutputScreen(self.parent_frame)
 
-    def start_docker_containers(self):
-        ollama_setup.start_ollama_container()
-        tts_setup.start_tts_container()
-
     def create_threads(self):
-        self.stream_worker = stream_thread.Stream_Thread("stream_thread")
-        self.audio_worker = audio_thread.Audio_Thread("audio_thread", streamer = self.stream_worker)
-        self.tts_worker = tts_thread.TTS_Thread("tts_thread", stream_worker=self.stream_worker)
+        if GLOBALS.SYS_OS == "Windows":
+            self.stream_worker = stream_thread.Stream_Thread("stream_thread")
+            self.tts_worker = tts_thread.TTS_Thread("tts_thread", stream_worker=self.stream_worker)
+        else:
+            self.tts_worker = tts_thread.TTS_Thread("tts_thread", stream_worker=[])
         self.llm_worker = llm_thread.LLM_Thread("llm_thread", tts_worker=self.tts_worker,  ui = self)
         self.prompt_worker = prompt_thread.Promt_Thread("prompt_thread", llm_worker=self.llm_worker,interval=60, ui = self)
 
     def start_threads(self):
-        self.audio_worker.start()
         self.tts_worker.start()
         self.llm_worker.start()
         self.prompt_worker.start()
-        self.stream_worker.start()
+        if GLOBALS.SYS_OS == "Windows":
+            self.stream_worker.start()
 
     def skip_timer(self):
         self.prompt_worker.skip_timer()

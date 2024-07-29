@@ -1,6 +1,8 @@
 import threading
 import queue
+import GLOBALS
 import tts_model
+import utils
 
 class TTS_Thread(threading.Thread):
     def __init__(self, name, stream_worker):
@@ -28,10 +30,14 @@ class TTS_Thread(threading.Thread):
         # print(f"{self.name} sending sentence with prompt: {prompt}")
         # Send request to Ollama
         # response = asyncio.run(llm_model.send_request_to_ollama(prompt))
-        response = tts_model.text_to_speech(sentence)
         #send response to audio player
         # self.audio_worker.add_task({"audio": response})
-        self.stream_worker.add_task({"audioBytes": response})
+        if GLOBALS.SYS_OS == "Windows":
+            response = tts_model.text_to_speech(sentence)
+            self.stream_worker.add_task({"audioBytes": response})
+        else:
+            utils.run_command_mac(f'say "{sentence}"')
+            
 
     def add_task(self, task):
         self.tasks.put(task)

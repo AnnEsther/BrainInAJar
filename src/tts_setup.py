@@ -18,8 +18,8 @@ def start_tts_container():
         if container.status != 'running':
             # Start the container if it's not already running
             container.start()
-        else:
-            return container
+        # else:
+            # return container
     else:
         # Run the container
         container = client.containers.run(**GLOBALS.TTS_DOCKER_CONFIG, detach=True)
