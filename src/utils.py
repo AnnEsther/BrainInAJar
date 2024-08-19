@@ -1,35 +1,19 @@
-import platform
-import pyaudio
-# from pydub import AudioSegment
-# import simpleaudio as sa
-import subprocess
-import time
+import platform  # Import platform module to get information about the OS
+import pyaudio  # Import PyAudio module to handle audio playback
+import subprocess  # Import subprocess module to run system commands
+import time  # Import time module to measure execution time
 
-import GLOBALS
-import ollama_setup
-import tts_setup
+import GLOBALS  # Import custom module GLOBALS, which contains global variables and settings
+import ollama_setup  # Import custom module ollama_setup, which handles setup for the Ollama container
+import tts_setup  # Import custom module tts_setup, which handles setup for the TTS container
 
-
+# Function to save audio data to a file
 def save_audio_file(audioString : str, fileName : str):
     # Save the response content as an audio file
     with open(fileName, "wb") as f:
         f.write(audioString)
 
-# def play_audio_file(fileName : str):
-#     # Load the audio file using pydub
-#     audio = AudioSegment.from_file(fileName)
-    
-#     # Play the audio using simpleaudio
-#     play_obj = sa.play_buffer(
-#         audio.raw_data,
-#         num_channels=audio.channels,
-#         bytes_per_sample=audio.sample_width,
-#         sample_rate=audio.frame_rate
-#     )
-    
-#     # Wait for playback to finish before exiting
-#     play_obj.wait_done()
-
+# Function to run a system command in the command prompt
 def run_command(command):
     """
     Run a command in the command prompt.
@@ -48,6 +32,7 @@ def run_command(command):
         print(f"Command output: {e.output}")
         return None
 
+# Function to measure the time taken by another function to execute
 def measure_time(func, *args, **kwargs):
     """
     Measure the time taken by a function to execute.
@@ -60,12 +45,13 @@ def measure_time(func, *args, **kwargs):
     Returns:
         tuple: The result of the function and the time taken to execute.
     """
-    start_time = time.time()
-    result = func(*args, **kwargs)
-    end_time = time.time()
-    time_taken = end_time - start_time
+    start_time = time.time()  # Record the start time
+    result = func(*args, **kwargs)  # Call the function with provided arguments
+    end_time = time.time()  # Record the end time
+    time_taken = end_time - start_time  # Calculate the time taken
     return result, time_taken
 
+# Function to play audio directly from byte data using PyAudio
 def play_audio_from_bytes(audio_bytes):
     chunk = 1024  # Chunk size for audio stream
     format = pyaudio.paInt16  # Audio format (16-bit PCM)
@@ -91,6 +77,7 @@ def play_audio_from_bytes(audio_bytes):
     # Terminate PyAudio
     p.terminate()
 
+# Function to run a command on macOS
 def run_command_mac(command):
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = process.communicate()
@@ -102,6 +89,7 @@ def run_command_mac(command):
         print(f"Command '{command}' failed with return code {process.returncode}.")
         print("Error:\n" + stderr.decode())
 
+# Function to check if a program is installed on the system
 def is_installed(program):
     try:
         result = subprocess.run([program, '--version'], capture_output=True, text=True)
@@ -111,18 +99,19 @@ def is_installed(program):
             return False
     except FileNotFoundError:
         return False
-    
+
+# Function to initiate the environment based on the operating system
 def initiate_enviornment():
-    os_name = platform.system()
-    GLOBALS.SYS_OS = os_name
+    os_name = platform.system()  # Get the name of the operating system
+    GLOBALS.SYS_OS = os_name  # Store the OS name in the global settings
     if os_name == "Windows":
-        if is_installed('docker'):
-            ollama_setup.start_ollama_container()
-            tts_setup.start_tts_container()
+        if is_installed('docker'):  # Check if Docker is installed
+            ollama_setup.start_ollama_container()  # Start the Ollama container if Docker is installed
+            tts_setup.start_tts_container()  # Start the TTS container if Docker is installed
         else:
             print("Install Docker first.")
     else:
-        if is_installed('ollama'):
-            ollama_setup.start_ollama()
+        if is_installed('ollama'):  # Check if Ollama is installed
+            ollama_setup.start_ollama()  # Start Ollama directly if installed
         else:
             print("Install Ollama first.")
